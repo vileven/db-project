@@ -1,5 +1,7 @@
 package api.models.generic;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.io.Serializable;
 
 /**
@@ -10,6 +12,7 @@ public abstract class Model<ID extends Serializable> {
     public abstract ID getId();
 
 
+    @JsonIgnore
     public boolean isNew() {
         return getId() == null;
     }
