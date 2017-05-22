@@ -4,6 +4,7 @@ import api.models.User;
 import api.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -33,6 +34,28 @@ public class UserController {
         } catch (DuplicateKeyException e) {
             final List<User> existsUsers = userService.findUsersByLoginOrEmail(nickname, userInfo.getEmail());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(existsUsers);
+        }
+    }
+
+    @GetMapping("/{nickname}/profile")
+    public ResponseEntity<?> findUser(@PathVariable String nickname) {
+        try {
+            final User findedUser = userService.findUserByLogin(nickname);
+            return ResponseEntity.ok(findedUser);
+        } catch (EmptyResultDataAccessException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
+        }
+    }
+
+    @PostMapping("/{nickname}/profile")
+    public ResponseEntity<?> updateUser(@PathVariable String nickname, @RequestBody User userInfo) {
+        try {
+            final User updatedUser = userService.updateUser(nickname, userInfo);
+            return ResponseEntity.ok(updatedUser);
+        } catch (EmptyResultDataAccessException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
+        } catch (DuplicateKeyException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("");
         }
     }
 }
