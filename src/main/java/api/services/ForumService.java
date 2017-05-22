@@ -38,4 +38,9 @@ public class ForumService {
                 "JOIN users u ON f.user_id = u.id " +
                 " WHERE lower(f.slug) = lower(?) ", FORUM_MAP, slug);
     }
+
+    public String getSlugBySlug(String slug) {
+        return template.queryForObject("SELECT f.slug FROM forums f WHERE lower(f.slug) = lower(?)",
+                String.class, slug);
+    }
 }

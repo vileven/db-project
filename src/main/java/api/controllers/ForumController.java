@@ -1,7 +1,9 @@
 package api.controllers;
 
 import api.models.Forum;
+import api.models.ThreadModel;
 import api.services.ForumService;
+import api.services.ThreadService;
 import api.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
@@ -20,11 +22,13 @@ public class ForumController {
 
     private final ForumService forumService;
     private final UserService userService;
+    private final ThreadService threadService;
 
     @Autowired
-    public ForumController(ForumService forumService, UserService userService) {
+    public ForumController(ForumService forumService, UserService userService, ThreadService threadService) {
         this.forumService = forumService;
         this.userService = userService;
+        this.threadService = threadService;
     }
 
     @PostMapping("/create")
@@ -45,6 +49,21 @@ public class ForumController {
         try {
             final Forum findedForum = forumService.findForumBySlug(slug);
             return ResponseEntity.ok(findedForum);
+        } catch (EmptyResultDataAccessException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
+        }
+    }
+
+    @PostMapping("/{slug}/create")
+    public ResponseEntity<?> createThread(@RequestBody ThreadModel threadInfo) {
+        try {
+            final ThreadModel createdThread = threadService.createThread(threadInfo);
+            createdThread.setAuthor(userService.getUserNicknameByNickname(createdThread.getAuthor()));
+            createdThread.setForum(forumService.getSlugBySlug(createdThread.getForum()));
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdThread);
+        } catch (DuplicateKeyException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(threadService.findThreadBySlug(threadInfo.getSlug()));
         } catch (EmptyResultDataAccessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
         }

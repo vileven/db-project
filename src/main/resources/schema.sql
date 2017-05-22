@@ -1,9 +1,13 @@
 DROP INDEX IF EXISTS index_users_on_email;
 DROP INDEX IF EXISTS index_users_on_nickname;
 DROP INDEX IF EXISTS index_forum_on_slug;
+DROP INDEX IF EXISTS index_threads_on_author_id;
+DROP INDEX IF EXISTS index_threads_on_forum_id;
+DROP INDEX IF EXISTS index_threads_on_slug;
 
 DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS forums CASCADE;
+DROP TABLE IF EXISTS threads CASCADE ;
 
 CREATE TABLE IF NOT EXISTS users (
   id       BIGSERIAL PRIMARY KEY,
@@ -34,3 +38,24 @@ CREATE UNIQUE INDEX index_forum_on_slug
 
 CREATE INDEX index_forum_on_user_id
   ON forums (user_id);
+
+CREATE TABLE IF NOT EXISTS threads (
+  id        BIGSERIAL PRIMARY KEY,
+  author_id BIGINT REFERENCES users (id),
+  created   TIMESTAMPTZ  NOT NULL,
+  forum_id  BIGINT REFERENCES forums (id),
+  message   TEXT         NOT NULL,
+  slug      VARCHAR(50) UNIQUE,
+  title     VARCHAR(100) NOT NULL,
+  votes     INT          NOT NULL DEFAULT 0
+);
+
+CREATE INDEX index_threads_on_author_id
+  ON threads (author_id);
+
+CREATE INDEX index_threads_on_forum_id
+  ON threads (forum_id);
+
+CREATE UNIQUE INDEX index_threads_on_slug
+  ON threads (LOWER(slug));
+
