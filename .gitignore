@@ -1,0 +1,9 @@
+
+# Idea ignore
+.idea
+
+# macOS Finder
+# Logs
+# Runtime data
+*.iml
+/target
