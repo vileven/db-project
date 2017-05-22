@@ -47,9 +47,18 @@ public class UserService {
         return template.queryForObject(query, USER_MAP, nickname);
     }
 
+    public String getUserNicknameByNickname(String nickname) {
+        return template.queryForObject("SELECT u.nickname FROM users u WHERE lower(nickname) = lower(?)",
+                String.class, nickname);
+    }
+
     public User updateUser(String nickname, User userInfo) {
-        final String query = "UPDATE users SET fullname = ?, email = ?, about = ? WHERE lower(nickname) = lower(?) " +
-                "RETURNING * ";
+        final String query = "UPDATE users SET " +
+                                "fullname = COALESCE(?, fullname)," +
+                                "email = COALESCE(?, email)," +
+                                "about = COALESCE(?, about) " +
+                              "WHERE lower(nickname) = lower(?) " +
+                              "RETURNING * ";
         return template.queryForObject(query, USER_MAP, userInfo.getFullname(),
                 userInfo.getEmail(), userInfo.getAbout(), nickname);
     }
