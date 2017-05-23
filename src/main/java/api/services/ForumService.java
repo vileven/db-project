@@ -43,4 +43,9 @@ public class ForumService {
         return template.queryForObject("SELECT f.slug FROM forums f WHERE lower(f.slug) = lower(?)",
                 String.class, slug);
     }
+
+    public Long getIdBySlug(String slug) {
+        return template.queryForObject("SELECT f.id FROM forums f WHERE lower(f.slug) = lower(?)",
+                Long.class, slug);
+    }
 }

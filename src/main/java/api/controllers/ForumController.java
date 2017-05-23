@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * Created by Vileven on 22.05.17.
  */
@@ -55,7 +57,7 @@ public class ForumController {
     }
 
     @PostMapping("/{slug}/create")
-    public ResponseEntity<?> createThread(@RequestBody ThreadModel threadInfo) {
+    public ResponseEntity<?> createThreadByForumSlug(@RequestBody ThreadModel threadInfo) {
         try {
             final ThreadModel createdThread = threadService.createThread(threadInfo);
             createdThread.setAuthor(userService.getUserNicknameByNickname(createdThread.getAuthor()));
@@ -65,6 +67,22 @@ public class ForumController {
         } catch (DuplicateKeyException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(threadService.findThreadBySlug(threadInfo.getSlug()));
         } catch (EmptyResultDataAccessException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
+        }
+    }
+
+
+    @GetMapping("/{slug}/threads")
+    public ResponseEntity<?> getThreadsByForumSlug(@PathVariable String slug,
+                                                   @RequestParam(value = "desc", defaultValue = "false") boolean desc,
+                                                   @RequestParam(value = "since", required = false) String since,
+                                                   @RequestParam(value = "limit", defaultValue = "100") Integer limit) {
+        try {
+            final Long forumId = forumService.getIdBySlug(slug);
+            final List<ThreadModel> threads = threadService.getForumThreads(forumId, limit, since, desc);
+
+            return ResponseEntity.ok(threads);
+        } catch (EmptyResultDataAccessException e ) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
         }
     }
