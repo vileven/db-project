@@ -4,10 +4,17 @@ DROP INDEX IF EXISTS index_forum_on_slug;
 DROP INDEX IF EXISTS index_threads_on_author_id;
 DROP INDEX IF EXISTS index_threads_on_forum_id;
 DROP INDEX IF EXISTS index_threads_on_slug;
+DROP INDEX IF EXISTS index_posts_on_author_id;
+DROP INDEX IF EXISTS index_posts_on_forum_id;
+DROP INDEX IF EXISTS index_posts_on_parent;
+DROP INDEX IF EXISTS index_posts_on_thread_id;
+DROP INDEX IF EXISTS index_posts_on_path;
+
 
 DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS forums CASCADE;
-DROP TABLE IF EXISTS threads CASCADE ;
+DROP TABLE IF EXISTS threads CASCADE;
+DROP TABLE IF EXISTS posts CASCADE ;
 
 CREATE TABLE IF NOT EXISTS users (
   id       BIGSERIAL PRIMARY KEY,
@@ -59,3 +66,30 @@ CREATE INDEX index_threads_on_forum_id
 CREATE UNIQUE INDEX index_threads_on_slug
   ON threads (LOWER(slug));
 
+
+CREATE TABLE IF NOT EXISTS posts (
+  id        BIGSERIAL PRIMARY KEY,
+  author_id BIGINT REFERENCES users (id)   NOT NULL,
+  created   TIMESTAMPTZ                    NOT NULL,
+  forum_id  BIGINT REFERENCES forums (id)  NOT NULL,
+  is_edited BOOLEAN DEFAULT FALSE,
+  message   TEXT,
+  parent    BIGINT REFERENCES posts (id),
+  path      BIGINT []                      NOT NULL,
+  thread_id BIGINT REFERENCES threads (id) NOT NULL
+) ;
+
+CREATE INDEX index_posts_on_path
+  ON posts USING GIN (path);
+
+CREATE INDEX index_posts_on_parent
+  ON posts (parent) ;
+
+CREATE INDEX index_posts_on_author_id
+  ON posts (author_id);
+
+CREATE INDEX index_posts_on_forum_id
+  ON posts (forum_id);
+
+CREATE INDEX index_posts_on_thread_id
+  ON posts(thread_id);
