@@ -2,9 +2,9 @@ package api.controllers;
 
 import api.models.Forum;
 import api.models.ThreadModel;
-import api.services.ForumService;
-import api.services.ThreadService;
-import api.services.UserService;
+import api.repositories.ForumRepository;
+import api.repositories.ThreadRepository;
+import api.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
@@ -22,25 +22,25 @@ import java.util.List;
 @RequestMapping(path = "/api/forum")
 public class ForumController {
 
-    private final ForumService forumService;
-    private final UserService userService;
-    private final ThreadService threadService;
+    private final ForumRepository forumRepository;
+    private final UserRepository userRepository;
+    private final ThreadRepository threadRepository;
 
     @Autowired
-    public ForumController(ForumService forumService, UserService userService, ThreadService threadService) {
-        this.forumService = forumService;
-        this.userService = userService;
-        this.threadService = threadService;
+    public ForumController(ForumRepository forumRepository, UserRepository userRepository, ThreadRepository threadRepository) {
+        this.forumRepository = forumRepository;
+        this.userRepository = userRepository;
+        this.threadRepository = threadRepository;
     }
 
     @PostMapping("/create")
     public ResponseEntity<?> createForum(@RequestBody Forum forumInfo) {
         try {
-            forumService.createForum(forumInfo);
-            forumInfo.setUser(userService.getUserNicknameByNickname(forumInfo.getUser()));
+            forumRepository.createForum(forumInfo);
+            forumInfo.setUser(userRepository.getUserNicknameByNickname(forumInfo.getUser()));
             return ResponseEntity.status(HttpStatus.CREATED).body(forumInfo);
         } catch (DuplicateKeyException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(forumService.findForumBySlug(forumInfo.getSlug()));
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(forumRepository.findForumBySlug(forumInfo.getSlug()));
         } catch (DataAccessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
         }
@@ -49,7 +49,7 @@ public class ForumController {
     @GetMapping("/{slug}/details")
     public ResponseEntity<?> getForum(@PathVariable String slug) {
         try {
-            final Forum findedForum = forumService.findForumBySlug(slug);
+            final Forum findedForum = forumRepository.findForumBySlug(slug);
             return ResponseEntity.ok(findedForum);
         } catch (EmptyResultDataAccessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
@@ -59,13 +59,13 @@ public class ForumController {
     @PostMapping("/{slug}/create")
     public ResponseEntity<?> createThreadByForumSlug(@RequestBody ThreadModel threadInfo) {
         try {
-            final ThreadModel createdThread = threadService.createThread(threadInfo);
-            createdThread.setAuthor(userService.getUserNicknameByNickname(createdThread.getAuthor()));
-            createdThread.setForum(forumService.getSlugBySlug(createdThread.getForum()));
+            final ThreadModel createdThread = threadRepository.createThread(threadInfo);
+            createdThread.setAuthor(userRepository.getUserNicknameByNickname(createdThread.getAuthor()));
+            createdThread.setForum(forumRepository.getSlugBySlug(createdThread.getForum()));
 
             return ResponseEntity.status(HttpStatus.CREATED).body(createdThread);
         } catch (DuplicateKeyException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(threadService.findThreadBySlug(threadInfo.getSlug()));
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(threadRepository.findThreadBySlug(threadInfo.getSlug()));
         } catch (EmptyResultDataAccessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
         }
@@ -78,8 +78,8 @@ public class ForumController {
                                                    @RequestParam(value = "since", required = false) String since,
                                                    @RequestParam(value = "limit", defaultValue = "100") Integer limit) {
         try {
-            final Long forumId = forumService.getIdBySlug(slug);
-            final List<ThreadModel> threads = threadService.getForumThreads(forumId, limit, since, desc);
+            final Long forumId = forumRepository.getIdBySlug(slug);
+            final List<ThreadModel> threads = threadRepository.getForumThreads(forumId, limit, since, desc);
 
             return ResponseEntity.ok(threads);
         } catch (EmptyResultDataAccessException e ) {

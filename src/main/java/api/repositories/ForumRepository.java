@@ -1,18 +1,18 @@
-package api.services;
+package api.repositories;
 
 import api.models.Forum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Created by Vileven on 22.05.17.
  */
 @Transactional
-@Service
-public class ForumService {
+@Repository
+public class ForumRepository {
     private final JdbcTemplate template;
 
     public static final RowMapper<Forum> FORUM_MAP = (rs, rowNum) -> new Forum(rs.getLong("id"),
@@ -20,7 +20,7 @@ public class ForumService {
             rs.getInt("posts"), rs.getInt("threads"));
 
     @Autowired
-    public ForumService(JdbcTemplate template) {
+    public ForumRepository(JdbcTemplate template) {
         this.template = template;
     }
 

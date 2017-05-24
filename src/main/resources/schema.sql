@@ -9,12 +9,22 @@ DROP INDEX IF EXISTS index_posts_on_forum_id;
 DROP INDEX IF EXISTS index_posts_on_parent;
 DROP INDEX IF EXISTS index_posts_on_thread_id;
 DROP INDEX IF EXISTS index_posts_on_path;
+DROP INDEX IF EXISTS index_votes_on_user_id_and_thread_id;
 
+DROP TRIGGER IF EXISTS on_vote_update
+ON votes;
+DROP TRIGGER IF EXISTS on_vote_insert
+ON votes;
+
+DROP FUNCTION IF EXISTS vote_insert();
+DROP FUNCTION IF EXISTS vote_update();
 
 DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS forums CASCADE;
 DROP TABLE IF EXISTS threads CASCADE;
-DROP TABLE IF EXISTS posts CASCADE ;
+DROP TABLE IF EXISTS posts CASCADE;
+DROP TABLE IF EXISTS votes CASCADE;
+
 
 CREATE TABLE IF NOT EXISTS users (
   id       BIGSERIAL PRIMARY KEY,
@@ -77,13 +87,13 @@ CREATE TABLE IF NOT EXISTS posts (
   parent    BIGINT REFERENCES posts (id),
   path      BIGINT []                      NOT NULL,
   thread_id BIGINT REFERENCES threads (id) NOT NULL
-) ;
+);
 
 CREATE INDEX index_posts_on_path
   ON posts USING GIN (path);
 
 CREATE INDEX index_posts_on_parent
-  ON posts (parent) ;
+  ON posts (parent);
 
 CREATE INDEX index_posts_on_author_id
   ON posts (author_id);
@@ -92,4 +102,54 @@ CREATE INDEX index_posts_on_forum_id
   ON posts (forum_id);
 
 CREATE INDEX index_posts_on_thread_id
-  ON posts(thread_id);
+  ON posts (thread_id);
+
+
+CREATE TABLE IF NOT EXISTS votes (
+  user_id   BIGINT REFERENCES users (id)   NOT NULL,
+  thread_id BIGINT REFERENCES threads (id) NOT NULL,
+  voice     INT                            NOT NULL
+);
+
+CREATE UNIQUE INDEX index_votes_on_user_id_and_thread_id
+  ON votes (user_id, thread_id);
+
+CREATE FUNCTION vote_insert()
+  RETURNS TRIGGER AS '
+BEGIN
+  UPDATE threads
+  SET
+    votes = votes + NEW.voice
+  WHERE id = NEW.thread_id;
+  RETURN NULL;
+END;
+' LANGUAGE plpgsql;
+
+
+CREATE TRIGGER on_vote_insert
+AFTER INSERT ON votes
+FOR EACH ROW EXECUTE PROCEDURE vote_insert();
+
+CREATE FUNCTION vote_update()
+  RETURNS TRIGGER AS '
+BEGIN
+
+  IF OLD.voice = NEW.voice
+  THEN
+    RETURN NULL;
+  END IF;
+
+  UPDATE threads
+  SET
+    votes = votes + CASE WHEN NEW.voice = -1 THEN -2 ELSE 2 END
+  WHERE id = NEW.thread_id;
+  RETURN NULL;
+END;
+' LANGUAGE plpgsql;
+
+CREATE TRIGGER on_vote_update
+AFTER UPDATE ON votes
+FOR EACH ROW EXECUTE PROCEDURE vote_update();
+
+
+

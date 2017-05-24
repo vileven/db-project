@@ -1,6 +1,8 @@
 package api.models;
 
 import api.models.generic.Model;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Created by Vileven on 23.05.17.
@@ -58,11 +60,16 @@ public class Post extends Model<Long> {
 
     private Long id;
     private String author;
+
+    public void setCreated(String created) {
+        this.created = created;
+    }
+
     private String created;
     private String forum;
     private String message;
     private Long thread;
-    private Long parent;
+    private Long parent = null;
     private Boolean isEdited;
 
     public Post(Long id, String author, String created, String forum, String message, Long thread, Long parent, Boolean isEdited) {
@@ -73,6 +80,14 @@ public class Post extends Model<Long> {
         this.message = message;
         this.thread = thread;
         this.parent = parent;
+        this.isEdited = isEdited;
+    }
+
+    @JsonCreator
+    public Post(@JsonProperty("author") String author, @JsonProperty("message") String message,
+                @JsonProperty(value = "isEdited") boolean isEdited) {
+        this.author = author;
+        this.message = message;
         this.isEdited = isEdited;
     }
 }

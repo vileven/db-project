@@ -1,11 +1,10 @@
-package api.services;
+package api.repositories;
 
 import api.models.User;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -13,13 +12,13 @@ import java.util.List;
 /**
  * Created by Vileven on 22.05.17.
  */
-@Service
+@Repository
 @Transactional
-public class UserService {
+public class UserRepository {
     private final JdbcTemplate template;
 
     @Autowired
-    public UserService(JdbcTemplate template) {
+    public UserRepository(JdbcTemplate template) {
         this.template = template;
     }
 
