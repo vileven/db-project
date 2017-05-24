@@ -5,6 +5,7 @@ import api.models.ThreadModel;
 import api.models.Vote;
 import api.repositories.PostRepository;
 import api.repositories.ThreadRepository;
+import api.utils.PostsGetWithSortionResponseBody;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
@@ -55,5 +56,54 @@ public class ThreadController {
         } catch (EmptyResultDataAccessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
         }
+    }
+
+    @GetMapping("/{slug_or_id}/details")
+    public ResponseEntity<?> getThread(@PathVariable(name = "slug_or_id") String slugOrId) {
+        try {
+            final ThreadModel thread = (slugOrId.matches("\\d+")) ? threadRepository.findThreadById(Long.parseLong(slugOrId)) :
+                    threadRepository.findThreadBySlug(slugOrId);
+            return ResponseEntity.ok(thread);
+        } catch (EmptyResultDataAccessException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
+        }
+    }
+
+    @GetMapping("{slug_or_id}/posts")
+    public ResponseEntity<?> getThreadPosts(@PathVariable(name = "slug_or_id") String slugOrId,
+                                            @RequestParam(value = "limit", defaultValue = "100") Integer limit,
+                                            @RequestParam(value = "marker", defaultValue = "0") String mark,
+                                            @RequestParam(value = "sort", defaultValue = "flat") String sort,
+                                            @RequestParam(value = "desc", defaultValue = "false") boolean desc) {
+
+        try {
+            final ThreadModel thread = (slugOrId.matches("\\d+")) ? threadRepository.findThreadById(Long.parseLong(slugOrId)) :
+                    threadRepository.findThreadBySlug(slugOrId);
+
+            Integer offset = Integer.valueOf(mark);
+            List<Post> posts = null;
+            switch (sort) {
+                case "flat":
+                    posts = postRepository.getPostsWithFlatSort(thread, limit, offset, desc);
+                    offset += posts.size();
+                    break;
+
+                case "tree":
+                    posts = postRepository.getPostsWithTreeSort(thread, limit, offset, desc);
+                    offset += posts.size();
+                    break;
+
+                case "parent_tree":
+                    posts = postRepository.getPostsWithParentTreeSort(thread, limit, offset, desc);
+                    offset += Math.min(limit, posts.size());
+                    break;
+            }
+
+            return ResponseEntity.ok(new PostsGetWithSortionResponseBody(offset.toString(), posts));
+
+        } catch (EmptyResultDataAccessException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
+        }
+
     }
 }

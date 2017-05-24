@@ -34,7 +34,7 @@ public class PostRepository {
         this.template = template;
     }
 
-    public static final RowMapper<Post> POST_MAP = (rs, rowNum) -> new Post(rs.getLong("id"), rs.getString("auth"),
+    public static final RowMapper<Post> POST_MAP = (rs, rowNum) -> new Post(rs.getLong("id"), rs.getString("author"),
             LocalDateTime.ofInstant(rs.getTimestamp("created").toInstant(),
                     ZoneOffset.ofHours(0)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")),
             rs.getString("forum"), rs.getString("message"), rs.getLong("thread_id"),
@@ -75,5 +75,64 @@ public class PostRepository {
                     "WHERE lower(slug) = lower(?)", postsInfo.size(), thread.getForum());
         }
         return postsInfo;
+    }
+
+
+    public List<Post> getPostsWithFlatSort(ThreadModel thread, Integer limit, Integer offset, boolean desc) {
+
+        final String sortParameter = (desc) ? "DESC" : "ASC";
+
+        final String query =
+                "SELECT " +
+                "p.id, u.nickname as author, f.slug as forum, p.created, p.message, p.thread_id, p.parent, p.is_edited " +
+                "FROM posts p " +
+                "JOIN users u ON p.author_id = u.id " +
+                "JOIN forums f ON p.forum_id = f.id " +
+                "WHERE p.thread_id = ? " +
+                "ORDER BY p.id " + sortParameter +
+               " LIMIT ? OFFSET ? ";
+
+        return template.query(query, POST_MAP, thread.getId(), limit, offset);
+    }
+
+    public List<Post> getPostsWithTreeSort(ThreadModel thread, Integer limit, Integer offset, boolean desc) {
+
+        final String sortParameter = (desc) ? "DESC" : "ASC";
+
+        final String query =
+                "SELECT " +
+                "p.id, u.nickname as author, f.slug as forum, p.created, p.message, p.thread_id, p.parent, p.is_edited " +
+                "FROM posts p " +
+                "JOIN users u ON p.author_id = u.id " +
+                "JOIN forums f ON p.forum_id = f.id " +
+                "WHERE p.thread_id = ? " +
+                "ORDER BY path " + sortParameter +
+               " LIMIT ? OFFSET ? ";
+
+        return template.query(query, POST_MAP, thread.getId(), limit, offset);
+    }
+
+    public List<Post> getPostsWithParentTreeSort(ThreadModel thread, Integer limit, Integer offset, boolean desc) {
+
+        final String sortParameter = (desc) ? "DESC" : "ASC";
+
+        final String query =
+                "WITH sub AS (" +
+                    "SELECT " +
+                    " path " +
+                    "FROM posts " +
+                "WHERE parent IS NULL AND thread_id = ? " +
+                "ORDER BY path " + sortParameter +
+               " LIMIT ? OFFSET ?" +
+                ')' +
+                "SELECT " +
+                "p.id, u.nickname as author, f.slug as forum, p.created, p.message, p.thread_id, p.parent, p.is_edited " +
+                "FROM posts p " +
+                "JOIN users u ON p.author_id = u.id " +
+                "JOIN forums f ON p.forum_id = f.id " +
+                "JOIN sub ON sub.path <@ p.path " +
+                "ORDER BY p.path " + sortParameter;
+
+        return template.query(query, POST_MAP, thread.getId(), limit, offset);
     }
 }
