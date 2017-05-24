@@ -1,6 +1,7 @@
 package api.repositories;
 
 import api.models.ThreadModel;
+import api.models.Vote;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -103,6 +104,20 @@ public class ThreadRepository {
                 "WHERE t.id = ?";
 
         return template.queryForObject(query, THREAD_MAP, id);
+    }
+
+    public ThreadModel addVote(Vote voteInfo, ThreadModel thread) {
+        template.update("INSERT INTO votes (user_id, thread_id, voice) VALUES " +
+                "((SELECT u.id FROM users u WHERE lower(nickname) = lower(?)), ?, ?) " +
+                "ON CONFLICT (user_id, thread_id) DO " +
+                " UPDATE SET voice = ?",
+                voteInfo.getNickname(), thread.getId(), voteInfo.getVoice(), voteInfo.getVoice()
+        );
+
+        thread.setVotes(template.queryForObject("SELECT t.votes FROM threads t " +
+                "WHERE t.id = ?", Integer.class, thread.getId()));
+
+        return thread;
     }
 
 

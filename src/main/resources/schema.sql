@@ -114,6 +114,7 @@ CREATE TABLE IF NOT EXISTS votes (
 CREATE UNIQUE INDEX index_votes_on_user_id_and_thread_id
   ON votes (user_id, thread_id);
 
+
 CREATE FUNCTION vote_insert()
   RETURNS TRIGGER AS '
 BEGIN

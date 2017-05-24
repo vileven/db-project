@@ -2,9 +2,11 @@ package api.controllers;
 
 import api.models.Post;
 import api.models.ThreadModel;
+import api.models.Vote;
 import api.repositories.PostRepository;
 import api.repositories.ThreadRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -39,6 +41,18 @@ public class ThreadController {
         } /*catch () {
 
         }*/ catch (SQLException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
+        }
+    }
+
+    @PostMapping("/{slug_or_id}/vote")
+    public ResponseEntity<?> voteThread(@PathVariable(name = "slug_or_id") String slugOrId, @RequestBody Vote voteInfo) {
+        try {
+            final ThreadModel thread = (slugOrId.matches("\\d+")) ? threadRepository.findThreadById(Long.parseLong(slugOrId)) :
+                    threadRepository.findThreadBySlug(slugOrId);
+
+            return ResponseEntity.ok(threadRepository.addVote(voteInfo, thread));
+        } catch (EmptyResultDataAccessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
         }
     }

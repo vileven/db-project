@@ -15,6 +15,11 @@ public class ThreadModel extends Model<Long> {
     private String forum;
     private String message;
     private String title;
+
+    public void setVotes(Integer votes) {
+        this.votes = votes;
+    }
+
     private Integer votes;
 
     public void setId(Long id) {
