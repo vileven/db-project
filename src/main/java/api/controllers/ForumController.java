@@ -2,6 +2,7 @@ package api.controllers;
 
 import api.models.Forum;
 import api.models.ThreadModel;
+import api.models.User;
 import api.repositories.ForumRepository;
 import api.repositories.ThreadRepository;
 import api.repositories.UserRepository;
@@ -83,6 +84,21 @@ public class ForumController {
 
             return ResponseEntity.ok(threads);
         } catch (EmptyResultDataAccessException e ) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
+        }
+    }
+
+    @GetMapping("/{slug}/users")
+    public ResponseEntity<?> getUsersByForum(@PathVariable String slug,
+                                             @RequestParam(value = "desc", defaultValue = "false") boolean desc,
+                                             @RequestParam(value = "since", required = false) String since,
+                                             @RequestParam(value = "limit", defaultValue = "100") Integer limit) {
+        try {
+            final Long forumId = forumRepository.getIdBySlug(slug);
+            final List<User> users = userRepository.findForumMembers(forumId, limit, since, desc);
+
+            return ResponseEntity.ok(users);
+        } catch (EmptyResultDataAccessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
         }
     }

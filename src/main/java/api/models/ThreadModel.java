@@ -16,7 +16,16 @@ public class ThreadModel extends Model<Long> {
     private String message;
     private String title;
 
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
     public void setVotes(Integer votes) {
+
         this.votes = votes;
     }
 

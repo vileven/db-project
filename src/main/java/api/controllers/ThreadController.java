@@ -106,4 +106,17 @@ public class ThreadController {
         }
 
     }
+
+    @PostMapping("/{slug_or_id}/details")
+    public ResponseEntity<?> getThreadDetails(@PathVariable(name = "slug_or_id") String slugOrId,
+                                              @RequestBody ThreadModel threadInfo) {
+        try {
+            final ThreadModel thread = (slugOrId.matches("\\d+")) ? threadRepository.findThreadById(Long.parseLong(slugOrId)) :
+                    threadRepository.findThreadBySlug(slugOrId);
+            final ThreadModel updatedThread = threadRepository.updateThread(thread, threadInfo);
+            return ResponseEntity.ok(updatedThread);
+        } catch (EmptyResultDataAccessException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
+        }
+    }
 }

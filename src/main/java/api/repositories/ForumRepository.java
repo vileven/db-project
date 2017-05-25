@@ -1,11 +1,14 @@
 package api.repositories;
 
 import api.models.Forum;
+import api.models.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * Created by Vileven on 22.05.17.
@@ -48,4 +51,6 @@ public class ForumRepository {
         return template.queryForObject("SELECT f.id FROM forums f WHERE lower(f.slug) = lower(?)",
                 Long.class, slug);
     }
+
+//    public List<User> getForumUsers()
 }

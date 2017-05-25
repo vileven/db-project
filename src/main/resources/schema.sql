@@ -10,6 +10,7 @@ DROP INDEX IF EXISTS index_posts_on_parent;
 DROP INDEX IF EXISTS index_posts_on_thread_id;
 DROP INDEX IF EXISTS index_posts_on_path;
 DROP INDEX IF EXISTS index_votes_on_user_id_and_thread_id;
+DROP INDEX IF EXISTS index_forum_members_on_user_id;
 
 DROP TRIGGER IF EXISTS on_vote_update
 ON votes;
@@ -24,6 +25,7 @@ DROP TABLE IF EXISTS forums CASCADE;
 DROP TABLE IF EXISTS threads CASCADE;
 DROP TABLE IF EXISTS posts CASCADE;
 DROP TABLE IF EXISTS votes CASCADE;
+DROP TABLE IF EXISTS forum_members CASCADE;
 
 
 CREATE TABLE IF NOT EXISTS users (
@@ -152,5 +154,25 @@ CREATE TRIGGER on_vote_update
 AFTER UPDATE ON votes
 FOR EACH ROW EXECUTE PROCEDURE vote_update();
 
+CREATE TABLE IF NOT EXISTS forum_members (
+  user_id  BIGINT REFERENCES users (id),
+  forum_id BIGINT REFERENCES forums (id)
+);
 
+CREATE INDEX index_forum_members_on_user_id
+  ON forum_members(forum_id, user_id) ;
+
+CREATE OR REPLACE FUNCTION forum_members_update() RETURNS TRIGGER AS '
+  BEGIN
+    INSERT INTO forum_members (user_id, forum_id) VALUES (NEW.author_id, NEW.forum_id);
+    RETURN NEW;
+  END;
+' LANGUAGE plpgsql;
+
+
+CREATE TRIGGER on_post_insert AFTER INSERT ON posts
+FOR EACH ROW EXECUTE PROCEDURE forum_members_update();
+
+CREATE TRIGGER on_thread_insert AFTER INSERT ON threads
+FOR EACH ROW EXECUTE PROCEDURE forum_members_update();
 

@@ -44,6 +44,9 @@ public class ThreadRepository {
                 threadInfo.getForum(), threadInfo.getMessage(), threadInfo.getSlug(), threadInfo.getTitle());
         threadInfo.setId(id);
 
+        template.update("UPDATE forums SET threads = threads + 1 WHERE lower(slug) = lower(?)",
+                threadInfo.getForum());
+
         return threadInfo;
     }
 
@@ -120,5 +123,20 @@ public class ThreadRepository {
         return thread;
     }
 
+    public ThreadModel updateThread(ThreadModel oldThread, ThreadModel threadInfo) {
+
+        oldThread.setMessage(   threadInfo.getMessage() == null ? oldThread.getMessage() :
+                threadInfo.getMessage() );
+        oldThread.setTitle( threadInfo.getTitle() == null ? oldThread.getTitle() :
+                threadInfo.getTitle() );
+
+        template.update("UPDATE threads " +
+                "SET " +
+                "message = ?," +
+                "title = ? " +
+                "WHERE id = ? ", oldThread.getMessage(), oldThread.getTitle(), oldThread.getId());
+
+        return oldThread;
+    }
 
 }
