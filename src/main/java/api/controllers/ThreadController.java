@@ -54,7 +54,7 @@ public class ThreadController {
                     threadRepository.findThreadBySlug(slugOrId);
 
             return ResponseEntity.ok(threadRepository.addVote(voteInfo, thread));
-        } catch (EmptyResultDataAccessException e) {
+        } catch (EmptyResultDataAccessException | DataIntegrityViolationException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
         }
     }

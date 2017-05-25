@@ -154,7 +154,7 @@ public class PostRepository {
     }
 
     public Post updatePost(Post postToUpdate, Post postInfo) {
-        postToUpdate.setEdited(!postInfo.getMessage().equals(postToUpdate.getMessage()));
+        postToUpdate.setEdited(postInfo.getMessage() != null && !postToUpdate.getMessage().equals(postInfo.getMessage()));
         postToUpdate.setMessage(postInfo.getMessage() != null ? postInfo.getMessage() : postToUpdate.getMessage());
         template.update("UPDATE posts SET " +
                 "message = ?," +
