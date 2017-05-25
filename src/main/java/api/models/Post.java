@@ -54,7 +54,7 @@ public class Post extends Model<Long> {
         return parent;
     }
 
-    public Boolean getEdited() {
+    public Boolean getIsEdited() {
         return isEdited;
     }
 
@@ -67,6 +67,15 @@ public class Post extends Model<Long> {
 
     private String created;
     private String forum;
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public void setEdited(Boolean edited) {
+        isEdited = edited;
+    }
+
     private String message;
     private Long thread;
     private Long parent = null;

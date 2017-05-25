@@ -2,8 +2,9 @@ package api.repositories;
 
 import api.models.Post;
 import api.models.ThreadModel;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -14,12 +15,11 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Created by Vileven on 23.05.17.
@@ -57,11 +57,18 @@ public class PostRepository {
                 post.setForum(thread.getForum());
                 post.setThread(thread.getId());
                 post.setCreated(created);
+                try {
+                    if (post.getParent() != null && !Objects.equals(this.getThreadIdById(post.getParent()), post.getThread())) {
+                        throw new DataIntegrityViolationException("thread exception");
+                    }
+                } catch (EmptyResultDataAccessException e) {
+                    throw new DataIntegrityViolationException(e.getMessage());
+                }
                 preparedStatement.setLong(1, post.getId());
                 preparedStatement.setString(2, post.getAuthor());
                 preparedStatement.setString(3, post.getCreated());
                 preparedStatement.setString(4, post.getForum());
-                preparedStatement.setBoolean(5, post.getEdited());
+                preparedStatement.setBoolean(5, post.getIsEdited());
                 preparedStatement.setString(6, post.getMessage());
                 preparedStatement.setObject(7, post.getParent());
                 preparedStatement.setObject(8, post.getParent());
@@ -134,5 +141,30 @@ public class PostRepository {
                 "ORDER BY p.path " + sortParameter;
 
         return template.query(query, POST_MAP, thread.getId(), limit, offset);
+    }
+
+
+    public Post findPostById(Long id) {
+        return template.queryForObject("SELECT p.id, f.slug as forum, u.nickname as author, p.message, p.thread_id, " +
+                " p.parent, p.created, p.is_edited  " +
+                "FROM posts p " +
+                "JOIN users u ON p.author_id = u.id " +
+                "JOIN forums f ON p.forum_id = f.id " +
+                "WHERE p.id = ? ", POST_MAP, id);
+    }
+
+    public Post updatePost(Post postToUpdate, Post postInfo) {
+        postToUpdate.setEdited(!postInfo.getMessage().equals(postToUpdate.getMessage()));
+        postToUpdate.setMessage(postInfo.getMessage() != null ? postInfo.getMessage() : postToUpdate.getMessage());
+        template.update("UPDATE posts SET " +
+                "message = ?," +
+                "is_edited = ? " +
+                "WHERE id = ?", postToUpdate.getMessage(), postToUpdate.getIsEdited(), postToUpdate.getId());
+
+        return postToUpdate;
+    }
+
+    public Long getThreadIdById(Long id) {
+        return template.queryForObject("SELECT thread_id FROM posts WHERE id = ?",Long.class, id);
     }
 }

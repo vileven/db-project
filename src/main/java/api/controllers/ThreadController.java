@@ -7,6 +7,7 @@ import api.repositories.PostRepository;
 import api.repositories.ThreadRepository;
 import api.utils.PostsGetWithSortionResponseBody;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,9 +40,9 @@ public class ThreadController {
 
             final List<Post> createdPosts = postRepository.createBatch(postsInfo, thread);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdPosts);
-        } /*catch () {
-
-        }*/ catch (SQLException e) {
+        } catch (DataIntegrityViolationException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("");
+        } catch (EmptyResultDataAccessException | SQLException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
         }
     }

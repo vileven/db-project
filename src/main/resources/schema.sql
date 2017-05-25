@@ -1,3 +1,5 @@
+SET SYNCHRONOUS_COMMIT = 'off';
+
 DROP INDEX IF EXISTS index_users_on_email;
 DROP INDEX IF EXISTS index_users_on_nickname;
 DROP INDEX IF EXISTS index_forum_on_slug;
@@ -86,7 +88,7 @@ CREATE TABLE IF NOT EXISTS posts (
   forum_id  BIGINT REFERENCES forums (id)  NOT NULL,
   is_edited BOOLEAN DEFAULT FALSE,
   message   TEXT,
-  parent    BIGINT REFERENCES posts (id),
+  parent    BIGINT ,
   path      BIGINT []                      NOT NULL,
   thread_id BIGINT REFERENCES threads (id) NOT NULL
 );
