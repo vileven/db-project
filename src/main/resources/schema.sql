@@ -94,6 +94,9 @@ CREATE TABLE IF NOT EXISTS posts (
 CREATE INDEX index_posts_on_path
   ON posts USING GIN (path);
 
+CREATE INDEX index_posts_on_thread_id_and_id
+  ON posts(thread_id, id);
+
 CREATE INDEX index_posts_on_parent
   ON posts (parent);
 
@@ -103,12 +106,16 @@ CREATE INDEX index_posts_on_thread_id
 CREATE INDEX index_posts_thread_path_parent
   ON posts(thread_id, parent, path);
 
+CREATE INDEX index_posts_on_thread_id_and_path_and_id
+  ON posts (thread_id, path ,id);
+
 
 CREATE TABLE IF NOT EXISTS votes (
   user_id   BIGINT REFERENCES users (id)   NOT NULL,
   thread_id BIGINT REFERENCES threads (id) NOT NULL,
   voice     INT                            NOT NULL
 );
+
 
 CREATE UNIQUE INDEX index_votes_on_user_id_and_thread_id
   ON votes (user_id, thread_id);
