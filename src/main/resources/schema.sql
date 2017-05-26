@@ -48,34 +48,32 @@ CREATE UNIQUE INDEX index_users_on_email
 CREATE TABLE IF NOT EXISTS forums (
   id      BIGSERIAL PRIMARY KEY,
   posts   INT                                     NOT NULL DEFAULT 0,
-  slug    VARCHAR(50),
+  slug    TEXT,
   threads INT                                     NOT NULL DEFAULT 0,
-  title   VARCHAR(100)                            NOT NULL,
-  user_id BIGINT REFERENCES users (id)            NOT NULL
+  title   TEXT                            NOT NULL,
+  "user"  TEXT                                    NOT NULL
 );
 
 CREATE UNIQUE INDEX index_forum_on_slug
   ON forums (LOWER(slug));
 
-CREATE INDEX index_forum_on_user_id
-  ON forums (user_id);
+CREATE INDEX index_forum_on_user
+  ON forums (lower("user"));
 
 CREATE TABLE IF NOT EXISTS threads (
   id        BIGSERIAL PRIMARY KEY,
-  author_id BIGINT REFERENCES users (id),
-  created   TIMESTAMPTZ  NOT NULL,
-  forum_id  BIGINT REFERENCES forums (id),
-  message   TEXT         NOT NULL,
-  slug      VARCHAR(50) UNIQUE,
-  title     VARCHAR(100) NOT NULL,
-  votes     INT          NOT NULL DEFAULT 0
+  author    TEXT        NOT NULL,
+  created   TIMESTAMPTZ NOT NULL,
+  forum TEXT NOT NULL ,
+  message   TEXT        NOT NULL,
+  slug      TEXT UNIQUE,
+  title     TEXT        NOT NULL,
+  votes     INT         NOT NULL DEFAULT 0
 );
 
-CREATE INDEX index_threads_on_author_id
-  ON threads (author_id);
 
-CREATE INDEX index_threads_on_forum_id
-  ON threads (forum_id);
+CREATE INDEX index_threads_on_forum
+  ON threads (lower(forum));
 
 CREATE UNIQUE INDEX index_threads_on_slug
   ON threads (LOWER(slug));
@@ -83,12 +81,12 @@ CREATE UNIQUE INDEX index_threads_on_slug
 
 CREATE TABLE IF NOT EXISTS posts (
   id        BIGSERIAL PRIMARY KEY,
-  author_id BIGINT REFERENCES users (id)   NOT NULL,
+  author TEXT NOT NULL ,
   created   TIMESTAMPTZ                    NOT NULL,
-  forum_id  BIGINT REFERENCES forums (id)  NOT NULL,
+  forum TEXT NOT NULL ,
   is_edited BOOLEAN DEFAULT FALSE,
   message   TEXT,
-  parent    BIGINT ,
+  parent    BIGINT,
   path      BIGINT []                      NOT NULL,
   thread_id BIGINT REFERENCES threads (id) NOT NULL
 );
@@ -99,14 +97,11 @@ CREATE INDEX index_posts_on_path
 CREATE INDEX index_posts_on_parent
   ON posts (parent);
 
-CREATE INDEX index_posts_on_author_id
-  ON posts (author_id);
-
-CREATE INDEX index_posts_on_forum_id
-  ON posts (forum_id);
-
 CREATE INDEX index_posts_on_thread_id
   ON posts (thread_id);
+
+CREATE INDEX index_posts_thread_path_parent
+  ON posts(thread_id, parent, path);
 
 
 CREATE TABLE IF NOT EXISTS votes (
@@ -146,7 +141,9 @@ BEGIN
 
   UPDATE threads
   SET
-    votes = votes + CASE WHEN NEW.voice = -1 THEN -2 ELSE 2 END
+    votes = votes + CASE WHEN NEW.voice = -1
+      THEN -2
+                    ELSE 2 END
   WHERE id = NEW.thread_id;
   RETURN NULL;
 END;
@@ -162,19 +159,30 @@ CREATE TABLE IF NOT EXISTS forum_members (
 );
 
 CREATE INDEX index_forum_members_on_user_id
-  ON forum_members(forum_id, user_id) ;
+  ON forum_members(user_id);
 
-CREATE OR REPLACE FUNCTION forum_members_update() RETURNS TRIGGER AS '
-  BEGIN
-    INSERT INTO forum_members (user_id, forum_id) VALUES (NEW.author_id, NEW.forum_id);
-    RETURN NEW;
-  END;
+CREATE INDEX index_forum_members_on_forum_id
+  ON forum_members(forum_id);
+
+CREATE INDEX index_forum_members_on_user_id_forum_id
+  ON forum_members (user_id, forum_id);
+
+
+CREATE OR REPLACE FUNCTION forum_members_update()
+  RETURNS TRIGGER AS '
+BEGIN
+  INSERT INTO forum_members (user_id, forum_id) VALUES ((SELECT id FROM users WHERE lower(NEW.author) = lower(nickname)),
+                                                        (SELECT id FROM forums WHERE lower(NEW.forum) = lower(slug)));
+  RETURN NULL;
+END;
 ' LANGUAGE plpgsql;
 
 
-CREATE TRIGGER on_post_insert AFTER INSERT ON posts
+CREATE TRIGGER on_post_insert
+AFTER INSERT ON posts
 FOR EACH ROW EXECUTE PROCEDURE forum_members_update();
 
-CREATE TRIGGER on_thread_insert AFTER INSERT ON threads
+CREATE TRIGGER on_thread_insert
+AFTER INSERT ON threads
 FOR EACH ROW EXECUTE PROCEDURE forum_members_update();
 

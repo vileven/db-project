@@ -8,6 +8,7 @@ import api.repositories.ThreadRepository;
 import api.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
@@ -58,16 +59,20 @@ public class ForumController {
     }
 
     @PostMapping("/{slug}/create")
-    public ResponseEntity<?> createThreadByForumSlug(@RequestBody ThreadModel threadInfo) {
+    public ResponseEntity<?> createThreadByForumSlug(@PathVariable String slug,
+            @RequestBody ThreadModel threadInfo) {
         try {
+            if(threadInfo.getForum() == null) {
+                threadInfo.setForum(slug);
+            }
             final ThreadModel createdThread = threadRepository.createThread(threadInfo);
-            createdThread.setAuthor(userRepository.getUserNicknameByNickname(createdThread.getAuthor()));
-            createdThread.setForum(forumRepository.getSlugBySlug(createdThread.getForum()));
+//            createdThread.setAuthor(userRepository.getUserNicknameByNickname(createdThread.getAuthor()));
+//            createdThread.setForum(forumRepository.getSlugBySlug(createdThread.getForum()));
 
             return ResponseEntity.status(HttpStatus.CREATED).body(createdThread);
         } catch (DuplicateKeyException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(threadRepository.findThreadBySlug(threadInfo.getSlug()));
-        } catch (EmptyResultDataAccessException e) {
+        } catch (EmptyResultDataAccessException | DataIntegrityViolationException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
         }
     }
@@ -79,8 +84,8 @@ public class ForumController {
                                                    @RequestParam(value = "since", required = false) String since,
                                                    @RequestParam(value = "limit", defaultValue = "100") Integer limit) {
         try {
-            final Long forumId = forumRepository.getIdBySlug(slug);
-            final List<ThreadModel> threads = threadRepository.getForumThreads(forumId, limit, since, desc);
+            final String slugs = forumRepository.getSlugBySlug(slug);
+            final List<ThreadModel> threads = threadRepository.getForumThreads(slugs, limit, since, desc);
 
             return ResponseEntity.ok(threads);
         } catch (EmptyResultDataAccessException e ) {

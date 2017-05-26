@@ -58,7 +58,7 @@ public class ThreadModel extends Model<Long> {
 
     @JsonCreator
     public ThreadModel(@JsonProperty("message") String message, @JsonProperty("slug") String slug,
-                       @JsonProperty("title") String title, @JsonProperty("author") String author,
+                       @JsonProperty("title") String title, @JsonProperty(value = "author") String author,
                        @JsonProperty("created") String created, @JsonProperty("forum") String forum,
                        @JsonProperty(value = "votes",required = false) Integer votes) {
         this.author = author;

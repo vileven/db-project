@@ -43,9 +43,9 @@ public class PostRepository {
 
     public List<Post> createBatch(List<Post> postsInfo, ThreadModel thread) throws SQLException {
         final String query = "INSERT INTO posts " +
-                "(id, author_id, created, forum_id, is_edited, message, parent, path, thread_id)" +
-                " VALUES (?, (SELECT u.id FROM users u WHERE lower(u.nickname) = lower(?)), ?::TIMESTAMPTZ, " +
-                "(SELECT f.id FROM forums f WHERE lower(f.slug) = lower(?)), ?, ?, ?," +
+                "(id, author, created, forum, is_edited, message, parent, path, thread_id)" +
+                " VALUES (?, (SELECT u.nickname FROM users u WHERE lower(u.nickname) = lower(?)), ?::TIMESTAMPTZ, " +
+                "(SELECT f.slug FROM forums f WHERE lower(f.slug) = lower(?)), ?, ?, ?," +
                 " (SELECT path FROM posts WHERE id = ?) || ?::BIGINT, ?) " ;
 
         final String created = ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
@@ -91,10 +91,8 @@ public class PostRepository {
 
         final String query =
                 "SELECT " +
-                "p.id, u.nickname as author, f.slug as forum, p.created, p.message, p.thread_id, p.parent, p.is_edited " +
+                "p.id, p.author, p.forum, p.created, p.message, p.thread_id, p.parent, p.is_edited " +
                 "FROM posts p " +
-                "JOIN users u ON p.author_id = u.id " +
-                "JOIN forums f ON p.forum_id = f.id " +
                 "WHERE p.thread_id = ? " +
                 "ORDER BY p.id " + sortParameter +
                " LIMIT ? OFFSET ? ";
@@ -108,10 +106,8 @@ public class PostRepository {
 
         final String query =
                 "SELECT " +
-                "p.id, u.nickname as author, f.slug as forum, p.created, p.message, p.thread_id, p.parent, p.is_edited " +
+                "p.id, p.author, p.forum, p.created, p.message, p.thread_id, p.parent, p.is_edited " +
                 "FROM posts p " +
-                "JOIN users u ON p.author_id = u.id " +
-                "JOIN forums f ON p.forum_id = f.id " +
                 "WHERE p.thread_id = ? " +
                 "ORDER BY path " + sortParameter +
                " LIMIT ? OFFSET ? ";
@@ -133,10 +129,8 @@ public class PostRepository {
                " LIMIT ? OFFSET ?" +
                 ')' +
                 "SELECT " +
-                "p.id, u.nickname as author, f.slug as forum, p.created, p.message, p.thread_id, p.parent, p.is_edited " +
+                "p.id, p.author, p.forum, p.created, p.message, p.thread_id, p.parent, p.is_edited " +
                 "FROM posts p " +
-                "JOIN users u ON p.author_id = u.id " +
-                "JOIN forums f ON p.forum_id = f.id " +
                 "JOIN sub ON sub.path <@ p.path " +
                 "ORDER BY p.path " + sortParameter;
 
@@ -145,11 +139,9 @@ public class PostRepository {
 
 
     public Post findPostById(Long id) {
-        return template.queryForObject("SELECT p.id, f.slug as forum, u.nickname as author, p.message, p.thread_id, " +
+        return template.queryForObject("SELECT p.id, p.forum, p.author, p.message, p.thread_id, " +
                 " p.parent, p.created, p.is_edited  " +
                 "FROM posts p " +
-                "JOIN users u ON p.author_id = u.id " +
-                "JOIN forums f ON p.forum_id = f.id " +
                 "WHERE p.id = ? ", POST_MAP, id);
     }
 

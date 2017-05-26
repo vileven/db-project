@@ -35,41 +35,37 @@ public class ThreadRepository {
 
 
     public ThreadModel createThread(ThreadModel threadInfo) {
-        final String query = "INSERT INTO threads (author_id, created, forum_id, message, slug, title) " +
-                                "VALUES ((SELECT u.id FROM users u WHERE lower(u.nickname) = lower(?)), " +
+        final String query = "INSERT INTO threads (author, created, forum, message, slug, title) " +
+                                "VALUES ((SELECT u.nickname FROM users u WHERE lower(u.nickname) = lower(?)), " +
                                     "COALESCE(?::TIMESTAMPTZ, current_timestamp), " +
-                                    "(SELECT f.id FROM forums f WHERE lower(slug) = lower(?)), ?, ?, ?) RETURNING id";
+                                    "( SELECT f.slug FROM forums f WHERE lower(f.slug) = lower(?) ), ?, ?, ?) RETURNING *";
 
-        final long id = template.queryForObject(query, Long.class, threadInfo.getAuthor(), threadInfo.getCreated(),
+        final ThreadModel updatedThread = template.queryForObject(query, THREAD_MAP, threadInfo.getAuthor(), threadInfo.getCreated(),
                 threadInfo.getForum(), threadInfo.getMessage(), threadInfo.getSlug(), threadInfo.getTitle());
-        threadInfo.setId(id);
+
 
         template.update("UPDATE forums SET threads = threads + 1 WHERE lower(slug) = lower(?)",
                 threadInfo.getForum());
 
-        return threadInfo;
+        return updatedThread;
     }
 
     public ThreadModel findThreadBySlug(String slug) {
         return template.queryForObject(
-                "SELECT t.id, u.nickname as author, f.slug as forum," +
+                "SELECT t.id, t.author, t.forum," +
                         " t.slug, t.created, t.message, t.title, t.votes FROM " +
                 "threads t " +
-                "JOIN users u ON t.author_id = u.id " +
-                "JOIN forums f ON t.forum_id = f.id  " +
                 "WHERE lower(t.slug) = lower(?)", THREAD_MAP, slug);
     }
 
-    public List<ThreadModel> getForumThreads(Long forumId, Integer limit, String since, boolean desc) {
+    public List<ThreadModel> getForumThreads(String slug, Integer limit, String since, boolean desc) {
         final StringBuilder queryBuilder = new StringBuilder();
 
-        queryBuilder.append("SELECT t.id, t.slug, u.nickname as author, ")
-                .append(" f.slug as forum, t.created, t.message, t.title, t.votes ")
+        queryBuilder.append("SELECT t.id, t.slug, t.author, ")
+                .append(" t.forum, t.created, t.message, t.title, t.votes ")
                 .append("FROM ")
                 .append("threads t ")
-                .append("JOIN users u ON t.author_id = u.id ")
-                .append("JOIN forums f ON t.forum_id = f.id ")
-                .append("WHERE t.forum_id = ? ");
+                .append("WHERE lower(t.forum) = lower(?) ");
 
         if (since != null) {
             if (desc) {
@@ -90,7 +86,7 @@ public class ThreadRepository {
 
         queryBuilder.append("LIMIT ?");
 
-        return template.query(queryBuilder.toString(), THREAD_MAP, forumId, limit);
+        return template.query(queryBuilder.toString(), THREAD_MAP, slug, limit);
     }
 
     public Long findThreadIdBySlug(String slug) {
@@ -99,11 +95,9 @@ public class ThreadRepository {
 
     public ThreadModel findThreadById(Long id) {
         final String query = "" +
-                "SELECT t.id, t.slug, u.nickname as author, t.created, f.slug as forum, t.message, t.title, t.votes " +
+                "SELECT t.id, t.slug, t.author, t.created, t.forum, t.message, t.title, t.votes " +
                 "FROM " +
-                "   threads t" +
-                "   JOIN users u ON t.author_id = u.id " +
-                "   JOIN forums f ON t.forum_id = f.id " +
+                "   threads t " +
                 "WHERE t.id = ?";
 
         return template.queryForObject(query, THREAD_MAP, id);
