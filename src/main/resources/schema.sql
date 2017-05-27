@@ -32,9 +32,9 @@ DROP TABLE IF EXISTS forum_members CASCADE;
 
 CREATE TABLE IF NOT EXISTS users (
   id       BIGSERIAL PRIMARY KEY,
-  nickname VARCHAR(50)  NOT NULL UNIQUE,
+  nickname VARCHAR(50)  NOT NULL,
   fullname VARCHAR(100) NOT NULL,
-  email    VARCHAR(50)  NOT NULL UNIQUE,
+  email    VARCHAR(50)  NOT NULL,
   about    TEXT
 );
 
